@@ -1,0 +1,17 @@
+librosa
+numpy
+pandas
+scikit-learn
+xgboost
+matplotlib
+tensorflow
+joblib
+soundfile
+opencv-python
+
+# Server / frontend
+fastapi
+uvicorn[standard]
+python-multipart
+streamlit
+scipy
