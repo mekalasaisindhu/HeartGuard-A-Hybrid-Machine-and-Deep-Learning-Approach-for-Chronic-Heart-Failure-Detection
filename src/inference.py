@@ -91,8 +91,9 @@ def predict(audio_path, ml_path, cnn_path, tmp_img=None):
         if remove_tmp and os.path.exists(tmp_img):
             os.remove(tmp_img)
 
-    # Hybrid fusion
-    final_prob = (0.7 * cnn_prob) + (0.3 * ml_prob)
+    # Hybrid fusion - 50% CNN + 50% ML
+    # Default weights - CNN slightly favored as it's more discriminative
+    final_prob = (0.5 * cnn_prob) + (0.5 * ml_prob)
 
     # Build feature dictionary (for frontend display)
     feature_dict = {}
