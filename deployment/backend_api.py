@@ -9,15 +9,18 @@ import sys
 
 app = FastAPI()
 
-# Paths where models exist
-ML_MODEL_DIR = os.path.join("models", "ml")
-CNN_MODEL_PATH = os.path.join("models", "cnn", "cnn_model.keras")
+# Get absolute project root path
+PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+
+# Paths where models exist (absolute paths)
+ML_MODEL_DIR = os.path.join(PROJECT_ROOT, "models", "ml")
+CNN_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "cnn", "cnn_model.keras")
 
 # ================================================================
 # Load inference module directly from src/inference.py
 # ================================================================
 def load_inference_module():
-    base_dir = os.path.dirname(os.path.dirname(__file__))  # project root
+    base_dir = PROJECT_ROOT
     # Ensure `src` is on sys.path so imports inside `src/inference.py`
     # like `from feature_engineering import ...` can be resolved.
     src_dir = os.path.join(base_dir, "src")
