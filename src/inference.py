@@ -92,7 +92,7 @@ def predict(audio_path, ml_path, cnn_path, tmp_img=None):
             os.remove(tmp_img)
 
     # Hybrid fusion
-    final_prob = (0.7 * cnn_prob) + (0.3 * ml_prob)
+    final_prob = (0.6 * cnn_prob) + (0.4 * ml_prob)
 
     # Build feature dictionary (for frontend display)
     feature_dict = {}
