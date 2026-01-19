@@ -90,3 +90,12 @@ async def analyze(file: UploadFile = File(...)):
     finally:
         if 'tmp_path' in locals() and os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+# ================================================================
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "backend_api:app",
+        host="0.0.0.0",
+        port=8000
+    )

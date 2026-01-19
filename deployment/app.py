@@ -14,8 +14,8 @@ from scipy.signal import butter, filtfilt
 # ==========================================================
 BACKEND_URL = os.getenv(
     "BACKEND_URL",
-    "http://127.0.0.1:8000/analyze"  # Local backend fallback
-)
+    "https://backend_api.onrender.com/analyze"
+)  # Local backend fallback
 
 st.set_page_config(
     page_title="HeartGuard – CHF Detection",
