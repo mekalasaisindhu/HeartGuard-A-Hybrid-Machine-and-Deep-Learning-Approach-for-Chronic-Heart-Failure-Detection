@@ -91,9 +91,9 @@ def predict(audio_path, ml_path, cnn_path, tmp_img=None):
         if remove_tmp and os.path.exists(tmp_img):
             os.remove(tmp_img)
 
-    # Hybrid fusion - adjusted weights since CNN tends to predict CHF more
-    # Using 40% CNN + 60% ML to balance the predictions
-    final_prob = (0.4 * cnn_prob) + (0.6 * ml_prob)
+    # Hybrid fusion - 50% CNN + 50% ML
+    # Default weights - CNN slightly favored as it's more discriminative
+    final_prob = (0.5 * cnn_prob) + (0.5 * ml_prob)
 
     # Build feature dictionary (for frontend display)
     feature_dict = {}
