@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 import shutil
@@ -92,10 +93,3 @@ async def analyze(file: UploadFile = File(...)):
             os.remove(tmp_path)
 
 # ================================================================
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "backend_api:app",
-        host="0.0.0.0",
-        port=8000
-    )

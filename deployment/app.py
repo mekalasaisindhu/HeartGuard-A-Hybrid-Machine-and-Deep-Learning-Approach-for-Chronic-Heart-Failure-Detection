@@ -14,7 +14,7 @@ from scipy.signal import butter, filtfilt
 # ==========================================================
 BACKEND_URL = os.getenv(
     "BACKEND_URL",
-    "https://heartguard-a-hybrid-machine-and-deep.onrender.com/analyze"
+    "http://127.0.0.1:8000/analyze"
 )  # Local backend fallback
 
 st.set_page_config(

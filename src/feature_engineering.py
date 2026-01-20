@@ -26,15 +26,16 @@ def extract_acoustic_features(audio_path):
 
 
 def generate_spectrogram(audio_path, output_image):
-    y, sr = librosa.load(audio_path)
+    y, sr = librosa.load(audio_path, sr=2000)  # Lower sample rate for speed
 
-    S = librosa.feature.melspectrogram(y=y, sr=sr)
+    S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=64)  # Reduced from default 128
     S_dB = librosa.power_to_db(S, ref=np.max)
 
-    plt.figure(figsize=(3, 3))
-    librosa.display.specshow(S_dB, sr=sr, cmap="viridis")
+    plt.figure(figsize=(2, 2), dpi=64)  # Smaller figure = faster rendering
+    librosa.display.specshow(S_dB, sr=sr, cmap="viridis", x_axis=None, y_axis=None)
     plt.axis("off")
-    plt.savefig(output_image, bbox_inches="tight", pad_inches=0)
+    plt.margins(0)
+    plt.savefig(output_image, bbox_inches="tight", pad_inches=0, format='png')
     plt.close()
 
 
