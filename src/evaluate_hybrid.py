@@ -2,9 +2,14 @@ import os
 import numpy as np
 import pandas as pd
 import joblib
+import json
 import tensorflow as tf
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_curve, auc, roc_auc_score
 from PIL import Image
 
 
@@ -60,12 +65,75 @@ def load_models():
     return scaler, svm, cnn
 
 
+def plot_training_history():
+    """Load and plot model training history."""
+    history_path = "models/cnn/training_history.json"
+    
+    if not os.path.exists(history_path):
+        print(f"⚠ Training history not found at {history_path}")
+        return
+    
+    with open(history_path, 'r') as f:
+        history = json.load(f)
+    
+    epochs = range(1, len(history['accuracy']) + 1)
+    
+    # Create figure with two y-axes
+    fig, ax1 = plt.subplots(figsize=(12, 7))
+    
+    # Plot accuracy on left axis
+    color_train = '#5A9BD5'  # Blue
+    color_val = '#ED7D31'    # Orange
+    
+    ax1.set_xlabel('Epochs', fontsize=13, fontweight='bold')
+    ax1.set_ylabel('Accuracy', fontsize=13, fontweight='bold', color='black')
+    
+    line_train = ax1.plot(epochs, history['accuracy'], marker='o', color=color_train, 
+                          label='Train Set', linewidth=2.5, markersize=6)
+    line_val = ax1.plot(epochs, history['val_accuracy'], marker='s', color=color_val, 
+                       label='Val Set', linewidth=2.5, markersize=6)
+    
+    ax1.tick_params(axis='y', labelcolor='black')
+    ax1.set_ylim([min(min(history['accuracy']), min(history['val_accuracy'])) - 0.01, 1.02])
+    ax1.grid(True, alpha=0.3, linestyle='--')
+    
+    # Create second y-axis for loss
+    ax2 = ax1.twinx()
+    color_loss = '#70AD47'  # Green
+    
+    ax2.set_ylabel('Loss', fontsize=13, fontweight='bold', color=color_loss)
+    line_loss = ax2.plot(epochs, history['loss'], marker='^', color=color_loss, 
+                         label='Loss', linewidth=2.5, markersize=6, linestyle='--', alpha=0.8)
+    
+    ax2.tick_params(axis='y', labelcolor=color_loss)
+    
+    # Combine legends
+    lines = line_train + line_val + line_loss
+    labels = [l.get_label() for l in lines]
+    ax1.legend(lines, labels, loc='upper left', fontsize=11, framealpha=0.95)
+    
+    plt.title('Hybrid Model Training History\nChronic Heart Failure Detection', 
+              fontsize=15, fontweight='bold', pad=20)
+    
+    fig.tight_layout()
+    
+    # Save the figure
+    os.makedirs("results", exist_ok=True)
+    plt.savefig("results/training_history_hybrid.png", dpi=300, bbox_inches='tight')
+    print("✓ Training history chart saved to: results/training_history_hybrid.png")
+    plt.close()
+
+
 # =========================
 # Evaluation Pipeline
 # =========================
 def evaluate():
     print("Loading feature CSV...")
     df = load_csv_clean(FEATURE_CSV)
+
+    # Plot training history first
+    print("\nGenerating training history chart...")
+    plot_training_history()
 
     # Prepare tabular features
     feature_cols = [c for c in df.columns if c not in ("file", "label")]
@@ -115,11 +183,75 @@ def evaluate():
     print("\nAccuracy:")
     print(accuracy_score(y, y_pred))
 
+    # Compute confusion matrix
+    cm = confusion_matrix(y, y_pred)
     print("\nConfusion Matrix:")
-    print(confusion_matrix(y, y_pred))
+    print(cm)
 
     print("\nClassification Report:")
     print(classification_report(y, y_pred))
+
+    # -------------------------
+    # Hybrid Model AUC Score
+    # -------------------------
+    hybrid_auc = roc_auc_score(y, hybrid_scores)
+
+    print("\n" + "="*60)
+    print("HeartGuard Hybrid Model - Receiver Operating Characteristic")
+    print("="*60)
+    print(f"AUC Score: {hybrid_auc:.4f}")
+    print("="*60)
+
+    # -------------------------
+    # ROC Curve for Hybrid Model
+    # -------------------------
+    fpr_hybrid, tpr_hybrid, _ = roc_curve(y, hybrid_scores)
+
+    plt.figure(figsize=(10, 8))
+
+    # Plot ROC curve for hybrid model
+    plt.plot(fpr_hybrid, tpr_hybrid, color='#2E86AB', label=f'HeartGuard Hybrid (AUC = {hybrid_auc:.4f})', linewidth=3)
+
+    # Diagonal line (random classifier)
+    plt.plot([0, 1], [0, 1], 'k--', label='Random Classifier (AUC = 0.5000)', linewidth=2, alpha=0.7)
+
+    plt.xlabel('False Positive Rate', fontsize=13, fontweight='bold')
+    plt.ylabel('True Positive Rate', fontsize=13, fontweight='bold')
+    plt.title('ROC Curve - HeartGuard Hybrid Model\nChronic Heart Failure Detection', fontsize=15, fontweight='bold')
+    plt.legend(loc='lower right', fontsize=12, framealpha=0.95)
+    plt.grid(True, alpha=0.3, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.tight_layout()
+
+    # Save the figure
+    os.makedirs("results", exist_ok=True)
+    plt.savefig("results/roc_curve_hybrid.png", dpi=300, bbox_inches='tight')
+    print("\n✓ ROC curve saved to: results/roc_curve_hybrid.png")
+    plt.close()
+
+    # -------------------------
+    # Confusion Matrix for Hybrid Model
+    # -------------------------
+    plt.figure(figsize=(10, 8))
+
+    # Plot confusion matrix
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=True,
+                xticklabels=['Normal', 'Abnormal'],
+                yticklabels=['Normal', 'Abnormal'],
+                annot_kws={'size': 16, 'fontweight': 'bold'},
+                cbar_kws={'label': 'Count'},
+                linewidths=2, linecolor='black')
+
+    plt.xlabel('Predicted Label', fontsize=13, fontweight='bold')
+    plt.ylabel('True Label', fontsize=13, fontweight='bold')
+    plt.title('Confusion Matrix - HeartGuard Hybrid Model\nChronic Heart Failure Detection', fontsize=15, fontweight='bold')
+    plt.tight_layout()
+
+    # Save the confusion matrix figure
+    plt.savefig("results/confusion_matrix_hybrid.png", dpi=300, bbox_inches='tight')
+    print("✓ Confusion matrix saved to: results/confusion_matrix_hybrid.png")
+    plt.close()
 
 
 # =========================
