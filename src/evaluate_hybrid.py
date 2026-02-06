@@ -9,7 +9,7 @@ matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_curve, auc, roc_auc_score
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_curve, auc, roc_auc_score, precision_score, recall_score, f1_score
 from PIL import Image
 
 
@@ -82,8 +82,8 @@ def plot_training_history():
     fig, ax1 = plt.subplots(figsize=(12, 7))
     
     # Plot accuracy on left axis
-    color_train = '#5A9BD5'  # Blue
-    color_val = '#ED7D31'    # Orange
+    color_train = '#B3D9FF'  # Light Blue
+    color_val = '#FFD9B3'    # Light Orange
     
     ax1.set_xlabel('Epochs', fontsize=13, fontweight='bold')
     ax1.set_ylabel('Accuracy', fontsize=13, fontweight='bold', color='black')
@@ -99,7 +99,7 @@ def plot_training_history():
     
     # Create second y-axis for loss
     ax2 = ax1.twinx()
-    color_loss = '#70AD47'  # Green
+    color_loss = '#B3E5B3'  # Light Green
     
     ax2.set_ylabel('Loss', fontsize=13, fontweight='bold', color=color_loss)
     line_loss = ax2.plot(epochs, history['loss'], marker='^', color=color_loss, 
@@ -121,6 +121,87 @@ def plot_training_history():
     os.makedirs("results", exist_ok=True)
     plt.savefig("results/training_history_hybrid.png", dpi=300, bbox_inches='tight')
     print("✓ Training history chart saved to: results/training_history_hybrid.png")
+    plt.close()
+
+
+def plot_model_comparison(ml_scores, cnn_scores, hybrid_scores, y):
+    """Plot comparative model performance metrics."""
+    # Calculate metrics for each model
+    ml_pred = (ml_scores > 0.5).astype(int)
+    cnn_pred = (cnn_scores > 0.5).astype(int)
+    hybrid_pred = (hybrid_scores > 0.6).astype(int)
+    
+    models = ['SVM\n(ML Model)', 'CNN\n(Deep Learning)', 'Hybrid\n(Proposed)']
+    
+    # Calculate metrics
+    accuracy = [
+        accuracy_score(y, ml_pred),
+        accuracy_score(y, cnn_pred),
+        accuracy_score(y, hybrid_pred)
+    ]
+    
+    precision = [
+        precision_score(y, ml_pred, zero_division=0),
+        precision_score(y, cnn_pred, zero_division=0),
+        precision_score(y, hybrid_pred, zero_division=0)
+    ]
+    
+    recall = [
+        recall_score(y, ml_pred, zero_division=0),
+        recall_score(y, cnn_pred, zero_division=0),
+        recall_score(y, hybrid_pred, zero_division=0)
+    ]
+    
+    f1 = [
+        f1_score(y, ml_pred, zero_division=0),
+        f1_score(y, cnn_pred, zero_division=0),
+        f1_score(y, hybrid_pred, zero_division=0)
+    ]
+    
+    auc_scores = [
+        roc_auc_score(y, ml_scores),
+        roc_auc_score(y, cnn_scores),
+        roc_auc_score(y, hybrid_scores)
+    ]
+    
+    # Create bar chart
+    x = np.arange(len(models))
+    width = 0.16
+    
+    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    colors = ['#AEC6FA', '#FFD9B3', '#B3E5B3', '#FFB3B3', '#E6B3FF']
+    
+    bars1 = ax.bar(x - 2*width, accuracy, width, label='Accuracy', color=colors[0], edgecolor='black', linewidth=1.2)
+    bars2 = ax.bar(x - width, precision, width, label='Precision', color=colors[1], edgecolor='black', linewidth=1.2)
+    bars3 = ax.bar(x, recall, width, label='Recall', color=colors[2], edgecolor='black', linewidth=1.2)
+    bars4 = ax.bar(x + width, f1, width, label='F1-Score', color=colors[3], edgecolor='black', linewidth=1.2)
+    bars5 = ax.bar(x + 2*width, auc_scores, width, label='AUC', color=colors[4], edgecolor='black', linewidth=1.2)
+    
+    # Add value labels on bars
+    for bars in [bars1, bars2, bars3, bars4, bars5]:
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                   f'{height:.3f}',
+                   ha='center', va='bottom', fontsize=9, fontweight='bold')
+    
+    ax.set_xlabel('Models', fontsize=13, fontweight='bold')
+    ax.set_ylabel('Score', fontsize=13, fontweight='bold')
+    ax.set_title('Comparative Model Performance\nChronic Heart Failure Detection', 
+                fontsize=15, fontweight='bold', pad=20)
+    ax.set_xticks(x)
+    ax.set_xticklabels(models, fontsize=12, fontweight='bold')
+    ax.set_ylim([0, 1.05])
+    ax.legend(fontsize=12, framealpha=0.95, loc='lower right')
+    ax.grid(True, alpha=0.3, axis='y', linestyle='--')
+    
+    plt.tight_layout()
+    
+    # Save the figure
+    os.makedirs("results", exist_ok=True)
+    plt.savefig("results/model_comparison.png", dpi=300, bbox_inches='tight')
+    print("✓ Model comparison chart saved to: results/model_comparison.png")
     plt.close()
 
 
@@ -190,6 +271,12 @@ def evaluate():
 
     print("\nClassification Report:")
     print(classification_report(y, y_pred))
+
+    # -------------------------
+    # Model Comparison Chart
+    # -------------------------
+    print("\nGenerating model comparison chart...")
+    plot_model_comparison(ml_scores, cnn_scores, hybrid_scores, y)
 
     # -------------------------
     # Hybrid Model AUC Score
