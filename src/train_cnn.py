@@ -3,6 +3,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from cnn_models import build_cnn
 import os
+import json
 
 def train_cnn_model(spectrogram_dir, model_out, epochs=10, batch_size=16):
 
@@ -39,12 +40,18 @@ def train_cnn_model(spectrogram_dir, model_out, epochs=10, batch_size=16):
 
     early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 
-    model.fit(
+    history = model.fit(
         train_data,
         validation_data=val_data,
         epochs=epochs,
         callbacks=[checkpoint, early_stop]
     )
+
+    # Save training history
+    history_path = os.path.join(os.path.dirname(model_out), 'training_history.json')
+    with open(history_path, 'w') as f:
+        json.dump(history.history, f, indent=4)
+    print("Training history saved at:", history_path)
 
     print("CNN model saved at:", model_out + ".keras")
 

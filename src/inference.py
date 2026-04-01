@@ -74,25 +74,33 @@ def predict(audio_path, ml_path, cnn_path, tmp_img=None):
     try:
         generate_spectrogram(audio_path, tmp_img)
         img = cv2.imread(tmp_img)
-        img = cv2.resize(img, (128, 128)) / 255.0
-        img = np.expand_dims(img, axis=0)
-
-        if _CNN is not None:
-            cnn = _CNN
+        if img is None:
+            # Fallback if image reading fails
+            cnn_prob = ml_prob
         else:
-            cnn = _load_cnn_model(cnn_path)
+            img = cv2.resize(img, (128, 128)) / 255.0
+            img = np.expand_dims(img, axis=0)
 
-        if _IS_TFSM:
-            cnn_prob = float(cnn(img).numpy()[0][0])
-        else:
-            cnn_prob = float(cnn.predict(img)[0][0])
+            if _CNN is not None:
+                cnn = _CNN
+            else:
+                cnn = _load_cnn_model(cnn_path)
 
+            if _IS_TFSM:
+                cnn_prob = float(cnn(img).numpy()[0][0])
+            else:
+                cnn_prob = float(cnn.predict(img, verbose=0)[0][0])  # Suppress output for speed
+
+    except Exception as e:
+        print(f"CNN inference error: {e}, falling back to ML prediction")
+        cnn_prob = ml_prob
     finally:
         if remove_tmp and os.path.exists(tmp_img):
             os.remove(tmp_img)
 
-    # Hybrid fusion
-    final_prob = (0.7 * cnn_prob) + (0.3 * ml_prob)
+    # Hybrid fusion - 50% CNN + 50% ML
+    # Default weights - CNN slightly favored as it's more discriminative
+    final_prob = (0.5 * cnn_prob) + (0.5 * ml_prob)
 
     # Build feature dictionary (for frontend display)
     feature_dict = {}
